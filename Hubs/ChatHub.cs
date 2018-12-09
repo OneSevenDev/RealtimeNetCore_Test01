@@ -8,28 +8,31 @@ namespace SignalRChat.Hubs
 {
     public class ChatHub : Hub
     {
-        public static List<Client> ConnectedUsers { get; set; } = new List<Client>();
+        public static List<Users> ListUsers { get; set; } = new List<Users>();
         public async Task SendMessage(string user, string message)
         {
             await Clients.All.SendAsync("ReceiveMessage", user, message);
         }
 
         public async Task Connect(string username){
-            Client client = new Client() {
+            if (Context.UserIdentifier != null && ListUsers.Exists(u => u.Id.Equals(Context.UserIdentifier))){
+                username = $"{username}1";
+            }
+            Users user = new Users() {
                 Username = username,
                 Id = Context.ConnectionId
             };
-            ConnectedUsers.Add(client);
+            ListUsers.Add(user);
             await Clients.All.SendAsync("UpdateUsers",
-                        ConnectedUsers.Count(),
-                        ConnectedUsers.Select(u => u.Username));
+                        ListUsers.Count(),
+                        ListUsers.Select(u => u.Username));
         }
         public async Task OnDisconnect(){
-            Client clientRemove = ConnectedUsers.Single(u => u.Id == Context.ConnectionId);
-            ConnectedUsers.Remove(clientRemove);
+            Users userRemove = ListUsers.Single(u => u.Id == Context.ConnectionId);
+            ListUsers.Remove(userRemove);
             await Clients.All.SendAsync("UpdateUsers",
-                        ConnectedUsers.Count(),
-                        ConnectedUsers.Select(u => u.Username));
+                        ListUsers.Count(),
+                        ListUsers.Select(u => u.Username));
         }
     }
 }
